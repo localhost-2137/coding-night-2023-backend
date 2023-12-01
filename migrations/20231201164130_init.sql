@@ -16,6 +16,8 @@ CREATE TABLE room
     owner_id  INT     NOT NULL,
 
     room_name TEXT    NOT NULL,
+    current_temperature REAL NOT NULL,
+    current_humidity REAL NOT NULL,
 
     FOREIGN KEY (owner_id) REFERENCES user (user_id)
 );
