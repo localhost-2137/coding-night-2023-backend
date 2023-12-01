@@ -3,7 +3,7 @@ use axum::{
     extract::{ws::WebSocket, WebSocketUpgrade},
     http::Response,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "snake_case")]

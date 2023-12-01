@@ -45,6 +45,7 @@ async fn login_controller(
     let cookie = Cookie::build(("JWT_AUTH", jwt_string.clone()))
         .secure(true)
         .expires(None)
+        .path("/")
         .build();
 
     cookies.add(cookie);

@@ -11,7 +11,8 @@ CREATE TABLE user
 CREATE TABLE room
 (
     room_id   INTEGER PRIMARY KEY AUTOINCREMENT,
-    device_id INTEGER NOT NULL,
+    device_id INTEGER NOT NULL, 
+    icon_id   INT     NOT NULL,
     owner_id  INT     NOT NULL,
 
     room_name TEXT    NOT NULL,
@@ -23,7 +24,7 @@ CREATE TABLE schedule
 (
     schedule_id INTEGER PRIMARY KEY AUTOINCREMENT,
     room_id     INT NOT NULL,
-    
+
     repeat_on   TEXT CHECK (
             repeat_on IN ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')
         ),

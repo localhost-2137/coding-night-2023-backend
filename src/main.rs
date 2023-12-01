@@ -9,6 +9,7 @@ mod utils;
 mod middleware;
 mod router;
 mod websockets;
+mod room;
 
 pub struct DbState {
     conn: SqliteConnection,
