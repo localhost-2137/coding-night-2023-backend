@@ -1,5 +1,3 @@
-use axum::http::{HeaderMap, HeaderValue};
-use axum::http::request::Parts;
 use axum_extra::extract::CookieJar;
 use hmac::digest::KeyInit;
 use hmac::Hmac;
