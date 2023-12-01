@@ -58,7 +58,7 @@ async fn handle_socket(mut socket: WebSocket, device_id: i64) {
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
     {
         _ = tx.send(WsOutputData::Settings {
-            presence_timeout: 15000,
+            presence_timeout: 60000,
         });
 
         CLIENTS.lock().await.insert(device_id, tx);
