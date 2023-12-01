@@ -6,11 +6,12 @@ use serde::{Deserialize, Serialize};
 use sqlx::{Executor, SqlitePool};
 use crate::utils::jwt::JWTAuth;
 
-pub fn router() -> Router {
+pub fn router(conn: SqlitePool) -> Router {
     Router::new()
         .route("/register", post(register_controller))
         .route("/login", post(login_controller))
         .layer(CookieManagerLayer::new())
+        .layer(Extension(conn))
 }
 
 #[derive(Serialize, Deserialize, Clone)]
