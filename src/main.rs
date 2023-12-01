@@ -1,12 +1,11 @@
-use std::sync::Arc;
-use axum::Router;
 use dotenvy::dotenv;
-use sqlx::{Connection, SqliteConnection};
+use sqlx::{SqliteConnection};
 use sqlx::sqlite::SqlitePoolOptions;
 
 mod router;
 mod middleware;
 mod auth;
+mod utils;
 
 pub struct DbState {
     conn: SqliteConnection
