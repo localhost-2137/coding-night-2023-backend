@@ -22,6 +22,16 @@ CREATE TABLE room
     FOREIGN KEY (owner_id) REFERENCES user (user_id)
 );
 
+CREATE TABLE room_history
+(
+    room_id         INT NOT NULL,
+    temperature     REAL NOT NULL,
+    humidity        REAL NOT NULL,
+    created_at      DATETIME NOT NULL,
+
+    FOREIGN KEY (room_id) REFERENCES room (room_id)
+);
+
 CREATE TABLE schedule
 (
     schedule_id INTEGER PRIMARY KEY AUTOINCREMENT,

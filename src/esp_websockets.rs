@@ -31,7 +31,7 @@ pub enum WsInnerData {
 #[serde(tag = "type", content = "data")]
 #[serde(rename_all = "snake_case")]
 pub enum WsOutputData {
-    Presence { status: bool },
+    Settings { presence_timeout: u64 },
 }
 
 lazy_static::lazy_static! {
@@ -57,7 +57,11 @@ async fn handle_socket(mut socket: WebSocket, device_id: i64) {
     println!("New client: {}", device_id);
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
     {
-        CLIENTS.lock().await.insert(device_id, tx.clone());
+        _ = tx.send(WsOutputData::Settings {
+            presence_timeout: 15000,
+        });
+
+        CLIENTS.lock().await.insert(device_id, tx);
     }
 
     loop {
@@ -68,34 +72,30 @@ async fn handle_socket(mut socket: WebSocket, device_id: i64) {
                     let data: WsInputData = serde_json::from_slice(&data).unwrap();
                     println!("{:?}", data);
 
-                    if let WsInnerData::Move = data.inner {
-                        let msg = WsOutputData::Presence { status: true };
-                        tx.send(msg).unwrap();
-                    }
-
                     msg
                 } else {
-                    // client disconnected
-                    return;
+                    break;
                 };
 
                 if socket.send(msg).await.is_err() {
-                    // client disconnected
-                    return;
+                    break;
                 }
             }
             Some(msg) = rx.recv() => {
                 let msg = serde_json::to_string(&msg).unwrap();
                 let msg = Message::from(msg);
                 if socket.send(msg).await.is_err() {
-                    // client disconnected
-                    return;
+                    break;
                 }
             }
             else => {
                 println!("Client {} disconnected", device_id);
-                return;
+                break;
             }
         }
+    }
+
+    {
+        CLIENTS.lock().await.remove(&device_id);
     }
 }
