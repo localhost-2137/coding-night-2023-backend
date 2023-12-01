@@ -1,6 +1,5 @@
 use dotenvy::dotenv;
 use sqlx::sqlite::SqlitePoolOptions;
-use sqlx::SqliteConnection;
 
 mod auth;
 mod esp_websockets;
@@ -8,10 +7,6 @@ mod middleware;
 mod room;
 mod router;
 mod utils;
-
-pub struct DbState {
-    conn: SqliteConnection,
-}
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
