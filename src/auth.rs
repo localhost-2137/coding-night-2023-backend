@@ -6,7 +6,6 @@ use axum::{Extension, Json, Router};
 use axum::routing::post;
 use tower_cookies::{Cookie, CookieManagerLayer, Cookies};
 use serde::{Deserialize, Serialize};
-use sha2::Sha256;
 use sqlx::{Executor, SqlitePool};
 use crate::utils::jwt::JWTAuth;
 
