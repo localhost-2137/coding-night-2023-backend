@@ -1,10 +1,10 @@
 use axum::{Extension, Json, Router};
 use axum::extract::Query;
 use axum::http::StatusCode;
-use axum::routing::{get, post};
+use axum::routing::{get, patch, post};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use sqlx::{SqlitePool};
+use sqlx::{Executor, SqlitePool};
 use crate::utils::jwt::JWTAuth;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -12,6 +12,14 @@ struct CreateRoomDto {
     device_id: i64,
     icon_id: u32,
     name: String,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct UpdateRoomDto {
+    id: u32,
+    name: Option<String>,
+    device_id: Option<u64>,
+    icon_id: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -31,7 +39,42 @@ pub fn router(pool: SqlitePool) -> Router {
     Router::new()
         .route("/", get(get_room_controller))
         .route("/", post(create_room_controller))
+        .route("/", patch(update_room_controller))
         .layer(Extension(pool))
+}
+
+async fn update_room_controller(
+    Extension(pool): Extension<SqlitePool>,
+    jwt_auth: JWTAuth,
+    Json(update_room_dto): Json<UpdateRoomDto>,
+) -> Result<String, (StatusCode, String)> {
+    update_room_service(pool, jwt_auth.id, update_room_dto).await.map_err(|e| {
+        let err = e.to_string();
+        (StatusCode::INTERNAL_SERVER_ERROR, err)
+    })?;
+
+    Ok("Successfully updated".to_string())
+}
+
+async fn update_room_service(pool: SqlitePool, user_id: u32, update_dto: UpdateRoomDto) -> anyhow::Result<()> {
+    let device_id = update_dto.device_id.map(|e| e as i64);
+
+    let query = sqlx::query!(
+        r#"
+        UPDATE room
+            SET room_name = COALESCE(?, room_name),
+            icon_id = COALESCE(?, icon_id),
+            device_id = COALESCE(?, device_id)
+            WHERE owner_id = ? AND room_id = ?
+        "#,
+        update_dto.name,
+        update_dto.icon_id,
+        device_id,
+        user_id,
+        update_dto.id
+    );
+    pool.execute(query).await?;
+    Ok(())
 }
 
 async fn create_room_controller(
@@ -43,7 +86,7 @@ async fn create_room_controller(
         let err = e.to_string();
         (StatusCode::INTERNAL_SERVER_ERROR, err)
     })?;
-    
+
     Ok(Json(res))
 }
 
@@ -55,7 +98,7 @@ async fn create_room_service(pool: SqlitePool, user_id: u32, create_room: Create
         create_room.name,
         create_room.icon_id,
     ).fetch_one(&pool).await?;
-    
+
     Ok(Room {
         id: res.room_id as u32,
         name: res.room_name,
