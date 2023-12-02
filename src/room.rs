@@ -68,19 +68,15 @@ async fn update_room_service(
     user_id: u32,
     update_dto: UpdateRoomDto,
 ) -> anyhow::Result<()> {
-    let device_id = update_dto.device_id.map(|e| e as i64);
-
     let query = sqlx::query!(
         r#"
         UPDATE room
             SET room_name = COALESCE(?, room_name),
-            icon_id = COALESCE(?, icon_id),
-            device_id = COALESCE(?, device_id)
+            icon_id = COALESCE(?, icon_id)
             WHERE owner_id = ? AND room_id = ?
         "#,
         update_dto.name,
         update_dto.icon_id,
-        device_id,
         user_id,
         update_dto.id
     );
