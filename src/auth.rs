@@ -45,7 +45,6 @@ async fn login_controller(
         })?;
 
     let cookie = Cookie::build(("JWT_AUTH", jwt_string.clone()))
-        .secure(true)
         .expires(None)
         .path("/")
         .build();
@@ -85,7 +84,6 @@ async fn register_controller(
     })?;
 
     let cookie = Cookie::build(("JWT_AUTH", jwt_string))
-        .secure(true)
         .expires(None)
         .path("/")
         .build();
