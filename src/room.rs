@@ -1,5 +1,5 @@
 use crate::utils::jwt::JWTAuth;
-use axum::extract::Query;
+use axum::extract::{Path, Query};
 use axum::http::{HeaderValue, StatusCode};
 use axum::routing::{get, patch, post};
 use axum::{Extension, Json, Router};
@@ -45,6 +45,7 @@ pub fn router(pool: SqlitePool) -> Router {
         .route("/", get(get_room_controller))
         .route("/", post(create_room_controller))
         .route("/", patch(update_room_controller))
+        .route("/:id", patch(update_room_controller))
         .layer(
             CorsLayer::new()
                 .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
@@ -86,6 +87,34 @@ async fn update_room_service(
         update_dto.icon_id,
         user_id,
         update_dto.id
+    );
+    pool.execute(query).await?;
+    Ok(())
+}
+
+async fn delete_room_controller(
+    Extension(pool): Extension<SqlitePool>,
+    jwt_auth: JWTAuth,
+    Path(id): Path<u32>,
+) -> Result<String, (StatusCode, String)> {
+    delete_room_service(pool, jwt_auth.id, id)
+        .await
+        .map_err(|e| {
+            let err = e.to_string();
+            (StatusCode::INTERNAL_SERVER_ERROR, err)
+        })?;
+
+    Ok("Successfully updated".to_string())
+}
+
+async fn delete_room_service(pool: SqlitePool, user_id: u32, room_id: u32) -> anyhow::Result<()> {
+    let query = sqlx::query!(
+        r#"
+        DELETE FROM room
+            WHERE owner_id = ? AND room_id = ?
+        "#,
+        user_id,
+        room_id
     );
     pool.execute(query).await?;
     Ok(())
