@@ -8,7 +8,7 @@ use http::Method;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{Executor, SqlitePool};
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 
 #[derive(Serialize, Deserialize, Clone)]
 struct CreateRoomDto {
@@ -40,12 +40,21 @@ struct Room {
     watthour: f64,
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+struct RoomHistory {
+    temperature: f64,
+    humidity: f64,
+    watthour: f64,
+    created_at: String,
+}
+
 pub fn router(pool: SqlitePool) -> Router {
     Router::new()
         .route("/", get(get_room_controller))
         .route("/", post(create_room_controller))
         .route("/", patch(update_room_controller))
         .route("/:id", delete(delete_room_controller))
+        .route("/history", get(get_rooms_history_controller))
         .layer(
             CorsLayer::new()
                 .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
@@ -147,8 +156,8 @@ async fn create_room_service(
         create_room.name,
         create_room.icon_id,
     )
-    .fetch_one(&pool)
-    .await?;
+        .fetch_one(&pool)
+        .await?;
 
     Ok(Room {
         id: res.room_id as u32,
@@ -190,8 +199,8 @@ async fn get_room_service(pool: SqlitePool, room_id: u32, user_id: u32) -> anyho
         room_id,
         user_id
     )
-    .fetch_one(&pool)
-    .await?;
+        .fetch_one(&pool)
+        .await?;
 
     Ok(Room {
         id: res.room_id as u32,
@@ -222,4 +231,39 @@ async fn get_all_rooms_service(pool: SqlitePool, user_id: u32) -> anyhow::Result
     }
 
     Ok(res)
+}
+
+async fn get_rooms_history_controller(
+    Extension(pool): Extension<SqlitePool>,
+    jwt_auth: JWTAuth,
+) -> Result<Json<Vec<RoomHistory>>, (StatusCode, String)> {
+    let res = get_rooms_history_service(pool, jwt_auth.id).await.map_err(|e| {
+        let err = e.to_string();
+        (StatusCode::INTERNAL_SERVER_ERROR, err)
+    })?;
+
+    Ok(Json(res))
+}
+
+async fn get_rooms_history_service(pool: SqlitePool, user_id: u32) -> anyhow::Result<Vec<RoomHistory>> {
+    let rows = sqlx::query!(r#"
+        SELECT temperature, humidity, watthour, created_at
+        FROM room_history
+            INNER JOIN room r on r.room_id = room_history.room_id
+            WHERE r.owner_id = ?
+    "#, user_id)
+        .fetch_all(&pool).await?;
+
+    let mut result = vec![];
+
+    for row in rows {
+        result.push(RoomHistory {
+            temperature: row.temperature,
+            humidity: row.humidity,
+            watthour: row.watthour,
+            created_at: row.created_at.to_string(),
+        });
+    }
+
+    Ok(result)
 }

@@ -37,7 +37,7 @@ pub enum WsOutputData {
 }
 
 lazy_static::lazy_static! {
-    static ref CLIENTS: Arc<Mutex<HashMap<i64, UnboundedSender<WsOutputData>>>> = Arc::new(Mutex::new(HashMap::new()));
+    pub static ref CLIENTS: Arc<Mutex<HashMap<i64, UnboundedSender<WsOutputData>>>> = Arc::new(Mutex::new(HashMap::new()));
 }
 
 pub async fn websocket_handler(

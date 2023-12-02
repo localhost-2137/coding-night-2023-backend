@@ -21,7 +21,7 @@ jwt = "0.16.0"
 hmac = "0.12.1"
 dotenvy = "0.15.0"
 sha2 = "0.10.8"
-sqlx = { version = "0.7.3", features = ["sqlite", "runtime-tokio"] }
+sqlx = { version = "0.7.3", features = ["sqlite", "runtime-tokio", "time"] }
 serde_json = "1.0.108"
 lazy_static = "1.4.0"
 http = "1.0.0"
