@@ -16,7 +16,6 @@ pub fn router(conn: SqlitePool) -> Router {
         .layer(CorsLayer::new()
             .allow_origin("localhost:5173".parse::<HeaderValue>().unwrap())
             .allow_headers(Any)
-            .allow_credentials(true)
         )
         .layer(Extension(conn))
 }
