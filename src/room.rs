@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{Executor, SqlitePool};
 use tower_http::cors::CorsLayer;
+use crate::utils::Pagination;
 
 #[derive(Serialize, Deserialize, Clone)]
 struct CreateRoomDto {
@@ -38,7 +39,7 @@ struct Room {
     temperature: f64,
     humidity: f64,
     watthour: f64,
-    lastpresence: i64
+    lastpresence: i64,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -167,7 +168,7 @@ async fn create_room_service(
         temperature: res.current_temperature,
         humidity: res.current_humidity,
         watthour: res.current_watthour,
-        lastpresence: res.last_presence
+        lastpresence: res.last_presence,
     })
 }
 
@@ -211,7 +212,7 @@ async fn get_room_service(pool: SqlitePool, room_id: i64, user_id: u32) -> anyho
         temperature: res.current_temperature,
         humidity: res.current_humidity,
         watthour: res.current_watthour,
-        lastpresence: res.last_presence
+        lastpresence: res.last_presence,
     })
 }
 
@@ -230,7 +231,7 @@ async fn get_all_rooms_service(pool: SqlitePool, user_id: u32) -> anyhow::Result
             temperature: row.current_temperature,
             humidity: row.current_humidity,
             watthour: row.current_watthour,
-            lastpresence: row.last_presence
+            lastpresence: row.last_presence,
         });
     }
 
@@ -240,9 +241,10 @@ async fn get_all_rooms_service(pool: SqlitePool, user_id: u32) -> anyhow::Result
 async fn get_rooms_history_controller(
     Extension(pool): Extension<SqlitePool>,
     jwt_auth: JWTAuth,
-    Query(GetRoom{id: room_id}): Query<GetRoom>
+    Query(GetRoom { id: room_id }): Query<GetRoom>,
+    Query(pagination): Query<Pagination>,
 ) -> Result<Json<Vec<RoomHistory>>, (StatusCode, String)> {
-    let res = get_rooms_history_service(pool, jwt_auth.id, room_id).await.map_err(|e| {
+    let res = get_rooms_history_service(pool, jwt_auth.id, room_id, pagination).await.map_err(|e| {
         let err = e.to_string();
         (StatusCode::INTERNAL_SERVER_ERROR, err)
     })?;
@@ -250,13 +252,20 @@ async fn get_rooms_history_controller(
     Ok(Json(res))
 }
 
-async fn get_rooms_history_service(pool: SqlitePool, user_id: u32, room_id: i64) -> anyhow::Result<Vec<RoomHistory>> {
+async fn get_rooms_history_service(pool: SqlitePool, user_id: u32, room_id: i64, pagination: Pagination) -> anyhow::Result<Vec<RoomHistory>> {
     let rows = sqlx::query!(r#"
         SELECT temperature, humidity, watthour, created_at
         FROM room_history
             INNER JOIN room r on r.room_id = room_history.room_id
             WHERE r.owner_id = ? AND r.room_id = ?
-    "#, user_id, room_id)
+            LIMIT ?
+            OFFSET ?
+    "#,
+        user_id,
+        room_id,
+        pagination.take,
+        pagination.skip,
+    )
         .fetch_all(&pool).await?;
 
     let mut result = vec![];
