@@ -40,11 +40,6 @@ pub fn router(pool: SqlitePool) -> Router {
         .route("/", get(get_room_controller))
         .route("/", post(create_room_controller))
         .route("/", patch(update_room_controller))
-        .layer(
-            CorsLayer::new()
-                .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
-                .allow_headers(Any),
-        )
         .layer(Extension(pool))
 }
 
