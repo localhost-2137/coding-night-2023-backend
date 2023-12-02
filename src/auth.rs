@@ -7,6 +7,7 @@ use axum::routing::post;
 use tower_cookies::{Cookie, CookieManagerLayer, Cookies};
 use serde::{Deserialize, Serialize};
 use sqlx::{Executor, SqlitePool};
+use tower_http::cors::CorsLayer;
 use crate::utils::jwt::JWTAuth;
 
 pub fn router(conn: SqlitePool) -> Router {
@@ -15,6 +16,7 @@ pub fn router(conn: SqlitePool) -> Router {
         .route("/login", post(login_controller))
         .layer(CookieManagerLayer::new())
         .layer(Extension(conn))
+        .layer(CorsLayer::permissive())
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -53,8 +55,6 @@ async fn login_controller(
 }
 
 async fn login_service(conn: &SqlitePool, login_dto: LoginDto) -> anyhow::Result<String> {
-    let hashed_password = hash_password(&login_dto.password)?;
-
     let res = sqlx::query!(
         "SELECT email, user_id, password FROM user WHERE email = ?",
         login_dto.email,

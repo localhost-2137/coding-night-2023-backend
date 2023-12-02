@@ -5,6 +5,7 @@ use axum::routing::{get, patch, post};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{Executor, SqlitePool};
+use tower_http::cors::CorsLayer;
 use crate::utils::jwt::JWTAuth;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -41,6 +42,7 @@ pub fn router(pool: SqlitePool) -> Router {
         .route("/", post(create_room_controller))
         .route("/", patch(update_room_controller))
         .layer(Extension(pool))
+        .layer(CorsLayer::permissive())
 }
 
 async fn update_room_controller(
