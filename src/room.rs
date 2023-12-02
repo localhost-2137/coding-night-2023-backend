@@ -19,7 +19,7 @@ struct CreateRoomDto {
 
 #[derive(Serialize, Deserialize, Clone)]
 struct UpdateRoomDto {
-    id: u32,
+    id: i64,
     name: Option<String>,
     device_id: Option<u64>,
     icon_id: Option<u32>,
@@ -27,12 +27,12 @@ struct UpdateRoomDto {
 
 #[derive(Serialize, Deserialize, Clone)]
 struct GetRoom {
-    id: u32,
+    id: i64,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
 struct Room {
-    id: u32,
+    id: i64,
     name: String,
     icon_id: u32,
     temperature: f64,
@@ -161,7 +161,7 @@ async fn create_room_service(
         .await?;
 
     Ok(Room {
-        id: res.room_id as u32,
+        id: res.room_id,
         name: res.room_name,
         icon_id: res.icon_id as u32,
         temperature: res.current_temperature,
@@ -195,9 +195,9 @@ async fn get_room_controller(
     }
 }
 
-async fn get_room_service(pool: SqlitePool, room_id: u32, user_id: u32) -> anyhow::Result<Room> {
+async fn get_room_service(pool: SqlitePool, room_id: i64, user_id: u32) -> anyhow::Result<Room> {
     let res = sqlx::query!(
-        "SELECT * FROM room WHERE room_id = ? AND owner_id=?",
+        "SELECT * FROM room WHERE room_id = ? AND owner_id = ?",
         room_id,
         user_id
     )
@@ -205,7 +205,7 @@ async fn get_room_service(pool: SqlitePool, room_id: u32, user_id: u32) -> anyho
         .await?;
 
     Ok(Room {
-        id: res.room_id as u32,
+        id: res.room_id,
         name: res.room_name,
         icon_id: res.icon_id as u32,
         temperature: res.current_temperature,
@@ -224,7 +224,7 @@ async fn get_all_rooms_service(pool: SqlitePool, user_id: u32) -> anyhow::Result
 
     for row in rows {
         res.push(Room {
-            id: row.room_id as u32,
+            id: row.room_id,
             name: row.room_name,
             icon_id: row.icon_id as u32,
             temperature: row.current_temperature,
