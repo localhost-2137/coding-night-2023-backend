@@ -14,7 +14,7 @@ pub fn router(conn: SqlitePool) -> Router {
             get(crate::esp_websockets::websocket_handler),
         )
         .layer(CorsLayer::new()
-            .allow_origin("localhost:5173".parse::<HeaderValue>().unwrap())
+            .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
             .allow_headers(Any)
         )
         .layer(Extension(conn))
