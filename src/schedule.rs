@@ -22,11 +22,11 @@ pub fn router(pool: SqlitePool) -> Router {
 #[derive(Serialize, Deserialize, Clone)]
 struct NewScheduleDto {
     room_id: u32,
-    repeat_on: Option<String>,
-    on_from_temperature: f64,
-    off_from_temperature: f64,
     repeat_once: bool,
-    trigger_after_ms: u64,
+    repeat_on: Option<String>,
+    on_from_temperature: Option<f64>,
+    off_from_temperature: Option<f64>,
+    trigger_after_ms: Option<u64>,
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -54,7 +54,7 @@ async fn new_schedule_controller(
 }
 
 async fn new_schedule_service(pool: SqlitePool, user_id: u32, dto: NewScheduleDto) -> anyhow::Result<Schedule> {
-    let trigger_after_ms = dto.trigger_after_ms as i32;
+    let trigger_after_ms = dto.trigger_after_ms.map(|e| e as i64);
 
     let res = sqlx::query!(r#"
         INSERT INTO schedule(owner_id, room_id, repeat_on, on_from_temperature, off_from_temperature, repeat_once, trigger_after_ms)
