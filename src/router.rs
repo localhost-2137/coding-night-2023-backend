@@ -1,7 +1,8 @@
 use axum::{routing::get, Extension, Router};
 use axum::http::HeaderValue;
+use http::header::COOKIE;
 use sqlx::SqlitePool;
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::{CorsLayer};
 
 pub fn router(conn: SqlitePool) -> Router {
     Router::new()
@@ -15,7 +16,8 @@ pub fn router(conn: SqlitePool) -> Router {
         )
         .layer(CorsLayer::new()
             .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
-            .allow_headers(Any)
+            .allow_credentials(true)
+            .allow_headers([COOKIE])
         )
         .layer(Extension(conn))
 }
