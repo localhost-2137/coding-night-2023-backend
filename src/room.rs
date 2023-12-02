@@ -240,8 +240,9 @@ async fn get_all_rooms_service(pool: SqlitePool, user_id: u32) -> anyhow::Result
 async fn get_rooms_history_controller(
     Extension(pool): Extension<SqlitePool>,
     jwt_auth: JWTAuth,
+    Query(GetRoom{id: room_id}): Query<GetRoom>
 ) -> Result<Json<Vec<RoomHistory>>, (StatusCode, String)> {
-    let res = get_rooms_history_service(pool, jwt_auth.id).await.map_err(|e| {
+    let res = get_rooms_history_service(pool, jwt_auth.id, room_id).await.map_err(|e| {
         let err = e.to_string();
         (StatusCode::INTERNAL_SERVER_ERROR, err)
     })?;
@@ -249,13 +250,13 @@ async fn get_rooms_history_controller(
     Ok(Json(res))
 }
 
-async fn get_rooms_history_service(pool: SqlitePool, user_id: u32) -> anyhow::Result<Vec<RoomHistory>> {
+async fn get_rooms_history_service(pool: SqlitePool, user_id: u32, room_id: u32) -> anyhow::Result<Vec<RoomHistory>> {
     let rows = sqlx::query!(r#"
         SELECT temperature, humidity, watthour, created_at
         FROM room_history
             INNER JOIN room r on r.room_id = room_history.room_id
-            WHERE r.owner_id = ?
-    "#, user_id)
+            WHERE r.owner_id = ? AND r.room_id = ?
+    "#, user_id, room_id)
         .fetch_all(&pool).await?;
 
     let mut result = vec![];
