@@ -14,9 +14,9 @@ CREATE TABLE room
     icon_id             INT  NOT NULL,
     owner_id            INT  NOT NULL,
     room_name           TEXT NOT NULL,
-    current_temperature REAL NOT NULL,
-    current_humidity    REAL NOT NULL,
-    current_watthour    REAL NOT NULL,
+    current_temperature REAL NOT NULL DEFAULT 0,
+    current_humidity    REAL NOT NULL DEFAULT 0,
+    current_watthour    REAL NOT NULL DEFAULT 0,
 
     FOREIGN KEY (owner_id) REFERENCES user (user_id)
 );
