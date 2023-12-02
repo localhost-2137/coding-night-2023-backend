@@ -51,8 +51,6 @@ pub async fn websocket_handler(
 }
 
 async fn handle_socket(mut socket: WebSocket, device_id: i64, pool: SqlitePool) {
-    println!("Client {} connected", device_id);
-
     let room = sqlx::query!("SELECT * FROM room WHERE room_id = ?", device_id)
         .fetch_optional(&pool)
         .await;
