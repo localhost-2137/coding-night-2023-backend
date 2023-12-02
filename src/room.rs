@@ -1,7 +1,7 @@
 use crate::utils::jwt::JWTAuth;
 use axum::extract::{Path, Query};
 use axum::http::{HeaderValue, StatusCode};
-use axum::routing::{get, patch, post};
+use axum::routing::{get, patch, post, delete};
 use axum::{Extension, Json, Router};
 use http::header::{CONTENT_TYPE, COOKIE};
 use http::Method;
@@ -45,7 +45,7 @@ pub fn router(pool: SqlitePool) -> Router {
         .route("/", get(get_room_controller))
         .route("/", post(create_room_controller))
         .route("/", patch(update_room_controller))
-        .route("/:id", patch(update_room_controller))
+        .route("/:id", delete(update_room_controller))
         .layer(
             CorsLayer::new()
                 .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
