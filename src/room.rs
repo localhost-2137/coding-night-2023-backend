@@ -38,6 +38,7 @@ struct Room {
     temperature: f64,
     humidity: f64,
     watthour: f64,
+    lastpresence: i64
 }
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -166,6 +167,7 @@ async fn create_room_service(
         temperature: res.current_temperature,
         humidity: res.current_humidity,
         watthour: res.current_watthour,
+        lastpresence: res.last_presence
     })
 }
 
@@ -209,6 +211,7 @@ async fn get_room_service(pool: SqlitePool, room_id: u32, user_id: u32) -> anyho
         temperature: res.current_temperature,
         humidity: res.current_humidity,
         watthour: res.current_watthour,
+        lastpresence: res.last_presence
     })
 }
 
@@ -227,6 +230,7 @@ async fn get_all_rooms_service(pool: SqlitePool, user_id: u32) -> anyhow::Result
             temperature: row.current_temperature,
             humidity: row.current_humidity,
             watthour: row.current_watthour,
+            lastpresence: row.last_presence
         });
     }
 

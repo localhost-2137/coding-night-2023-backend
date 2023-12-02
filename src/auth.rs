@@ -1,14 +1,14 @@
-use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
+use crate::utils::jwt::JWTAuth;
 use argon2::password_hash::rand_core::OsRng;
 use argon2::password_hash::SaltString;
+use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use axum::http::StatusCode;
-use axum::{Extension, Json, Router};
 use axum::routing::post;
-use tower_cookies::{Cookie, CookieManagerLayer, Cookies};
+use axum::{Extension, Json, Router};
 use serde::{Deserialize, Serialize};
-use sqlx::{Executor, query, SqlitePool};
+use sqlx::{query, Executor, SqlitePool};
+use tower_cookies::{Cookie, CookieManagerLayer, Cookies};
 use tower_http::cors::CorsLayer;
-use crate::utils::jwt::JWTAuth;
 
 pub fn router(conn: SqlitePool) -> Router {
     Router::new()
@@ -38,16 +38,16 @@ async fn login_controller(
     cookies: Cookies,
     Json(login_dto): Json<LoginDto>,
 ) -> Result<String, (StatusCode, String)> {
-    let jwt_string = login_service(&pool, login_dto).await
-        .map_err(|e| {
-            let err = e.to_string();
-            (StatusCode::INTERNAL_SERVER_ERROR, err)
-        })?;
+    let jwt_string = login_service(&pool, login_dto).await.map_err(|e| {
+        let err = e.to_string();
+        (StatusCode::INTERNAL_SERVER_ERROR, err)
+    })?;
 
     let cookie = Cookie::build(("JWT_AUTH", jwt_string.clone()))
-        .secure(true)
         .expires(None)
         .path("/")
+        .secure(false)
+        .same_site(cookie::SameSite::None)
         .build();
 
     cookies.add(cookie);
@@ -59,16 +59,21 @@ async fn login_service(conn: &SqlitePool, login_dto: LoginDto) -> anyhow::Result
         "SELECT email, user_id, password, name, lastname FROM user WHERE email = ?",
         login_dto.email,
     )
-        .fetch_one(conn).await?;
+    .fetch_one(conn)
+    .await?;
 
-    let db_passwd_hash = PasswordHash::new(&res.password).map_err(|_| {
-        anyhow::Error::msg("Failed to hash password")
-    })?;
-    Argon2::default().verify_password(login_dto.password.as_bytes(), &db_passwd_hash).map_err(|_| {
-        anyhow::Error::msg("Failed to verify password")
-    })?;
+    let db_passwd_hash = PasswordHash::new(&res.password)
+        .map_err(|_| anyhow::Error::msg("Failed to hash password"))?;
+    Argon2::default()
+        .verify_password(login_dto.password.as_bytes(), &db_passwd_hash)
+        .map_err(|_| anyhow::Error::msg("Failed to verify password"))?;
 
-    let jwt_struct = JWTAuth { email: res.email, id: res.user_id as u32, firstname: res.name, lastname: res.lastname };
+    let jwt_struct = JWTAuth {
+        email: res.email,
+        id: res.user_id as u32,
+        firstname: res.name,
+        lastname: res.lastname,
+    };
     let token_str = crate::utils::jwt::serialize_jwt(jwt_struct)?;
 
     Ok(token_str)
@@ -77,17 +82,19 @@ async fn login_service(conn: &SqlitePool, login_dto: LoginDto) -> anyhow::Result
 async fn register_controller(
     Extension(pool): Extension<SqlitePool>,
     cookies: Cookies,
-    Json(register_dto): Json<RegisterDto>) -> Result<String, StatusCode>
-{
-    let jwt_auth = register_service(&pool, register_dto).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    let jwt_string = crate::utils::jwt::serialize_jwt(jwt_auth).map_err(|_| {
-        StatusCode::INTERNAL_SERVER_ERROR
-    })?;
+    Json(register_dto): Json<RegisterDto>,
+) -> Result<String, StatusCode> {
+    let jwt_auth = register_service(&pool, register_dto)
+        .await
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let jwt_string = crate::utils::jwt::serialize_jwt(jwt_auth)
+        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
 
     let cookie = Cookie::build(("JWT_AUTH", jwt_string))
-        .secure(true)
         .expires(None)
         .path("/")
+        .secure(false)
+        .same_site(cookie::SameSite::None)
         .build();
 
     cookies.add(cookie);
@@ -118,7 +125,9 @@ fn hash_password(passwd: &str) -> anyhow::Result<String> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default();
 
-    let hashed_passwd = argon2.hash_password(passwd.as_bytes(), &salt).map_err(|_| anyhow::Error::msg("Failed to hash password"))?;
+    let hashed_passwd = argon2
+        .hash_password(passwd.as_bytes(), &salt)
+        .map_err(|_| anyhow::Error::msg("Failed to hash password"))?;
 
     Ok(hashed_passwd.to_string())
 }

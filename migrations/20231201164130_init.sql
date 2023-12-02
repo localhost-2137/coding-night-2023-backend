@@ -17,6 +17,7 @@ CREATE TABLE room
     current_temperature REAL NOT NULL DEFAULT 0,
     current_humidity    REAL NOT NULL DEFAULT 0,
     current_watthour    REAL NOT NULL DEFAULT 0,
+    last_presence       INT NOT NULL DEFAULT (strftime('%s', 'now')),
 
     FOREIGN KEY (owner_id) REFERENCES user (user_id)
 );

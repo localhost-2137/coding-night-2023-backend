@@ -51,6 +51,8 @@ pub async fn websocket_handler(
 }
 
 async fn handle_socket(mut socket: WebSocket, device_id: i64, pool: SqlitePool) {
+    println!("Client {} connected", device_id);
+
     let room = sqlx::query!("SELECT * FROM room WHERE room_id = ?", device_id)
         .fetch_optional(&pool)
         .await;
@@ -94,6 +96,12 @@ async fn handle_socket(mut socket: WebSocket, device_id: i64, pool: SqlitePool) 
                             temp,
                             hum,
                             wh,
+                            device_id,
+                        )
+                            .execute(&pool).await;
+                    } else if let WsInnerData::Move = data.inner {
+                        _ = sqlx::query!(
+                            "UPDATE room SET last_presence = (strftime('%s', 'now')) WHERE room_id = ?",
                             device_id,
                         )
                             .execute(&pool).await;
