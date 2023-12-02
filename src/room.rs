@@ -34,6 +34,9 @@ struct Room {
     id: u32,
     name: String,
     icon_id: u32,
+    temperture: f64,
+    humidity: f64,
+    watthour: f64,
 }
 
 pub fn router(pool: SqlitePool) -> Router {
@@ -119,6 +122,9 @@ async fn create_room_service(
         id: res.room_id as u32,
         name: res.room_name,
         icon_id: res.icon_id as u32,
+        temperture: res.current_temperature,
+        humidity: res.current_humidity,
+        watthour: res.current_watthour,
     })
 }
 
@@ -159,6 +165,9 @@ async fn get_room_service(pool: SqlitePool, room_id: u32, user_id: u32) -> anyho
         id: res.room_id as u32,
         name: res.room_name,
         icon_id: res.icon_id as u32,
+        temperture: res.current_temperature,
+        humidity: res.current_humidity,
+        watthour: res.current_watthour,
     })
 }
 
@@ -174,6 +183,9 @@ async fn get_all_rooms_service(pool: SqlitePool, user_id: u32) -> anyhow::Result
             id: row.room_id as u32,
             name: row.room_name,
             icon_id: row.icon_id as u32,
+            temperture: row.current_temperature,
+            humidity: row.current_humidity,
+            watthour: row.current_watthour,
         });
     }
 
