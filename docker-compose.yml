@@ -1,6 +1,17 @@
 version: "3"
 services: 
   backend:
-    build:
-      dockerfile: "./Dockerfile"
-    network_mode: host
+    image: filipton/smarty-backend:latest
+    restart: unless-stopped
+    environment:
+      SECRET: SuperSecretSecret1234
+  frontend:
+    image: filipton/smarty-frontend:latest
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:8090/api
+  nginx:
+    image: filipton/smarty-nginx:latest
+    restart: unless-stopped
+    ports:
+      - 8090:80
