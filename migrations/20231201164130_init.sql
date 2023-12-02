@@ -10,10 +10,16 @@ CREATE TABLE user
 
 CREATE TABLE room
 (
+<<<<<<< HEAD
     room_id             INTEGER PRIMARY KEY AUTOINCREMENT,
     device_id           INTEGER NOT NULL,
     icon_id             INT     NOT NULL,
     owner_id            INT     NOT NULL,
+=======
+    room_id   INTEGER PRIMARY KEY,
+    icon_id   INT     NOT NULL,
+    owner_id  INT     NOT NULL,
+>>>>>>> 1aac592 (chore: remove device id)
 
     room_name           TEXT    NOT NULL,
     current_temperature REAL    NOT NULL,
