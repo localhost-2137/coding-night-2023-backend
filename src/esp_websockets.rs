@@ -2,11 +2,13 @@ use axum::{
     body::Body,
     extract::{
         ws::{Message, WebSocket},
-        Request, WebSocketUpgrade,
+        Path, WebSocketUpgrade,
     },
     http::Response,
+    Extension,
 };
 use serde::{Deserialize, Serialize};
+use sqlx::SqlitePool;
 use std::{collections::HashMap, sync::Arc};
 use tokio::sync::{mpsc::UnboundedSender, Mutex};
 
@@ -38,22 +40,17 @@ lazy_static::lazy_static! {
     static ref CLIENTS: Arc<Mutex<HashMap<i64, UnboundedSender<WsOutputData>>>> = Arc::new(Mutex::new(HashMap::new()));
 }
 
-pub async fn websocket_handler(ws: WebSocketUpgrade, req: Request) -> Response<Body> {
-    if let Some(device_id) = req.uri().query() {
-        let device_id = device_id.parse::<i64>().unwrap();
-
-        return ws.on_upgrade(move |socket| async move {
-            handle_socket(socket, device_id).await;
-        });
-    } else {
-        Response::builder()
-            .status(400)
-            .body(Body::empty())
-            .expect("failed to render response")
-    }
+pub async fn websocket_handler(
+    ws: WebSocketUpgrade,
+    Path(device_id): Path<i64>,
+    Extension(pool): Extension<SqlitePool>,
+) -> Response<Body> {
+    return ws.on_upgrade(move |socket| async move {
+        handle_socket(socket, device_id, pool).await;
+    });
 }
 
-async fn handle_socket(mut socket: WebSocket, device_id: i64) {
+async fn handle_socket(mut socket: WebSocket, device_id: i64, pool: SqlitePool) {
     println!("New client: {}", device_id);
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
     {
@@ -69,8 +66,23 @@ async fn handle_socket(mut socket: WebSocket, device_id: i64) {
             Some(msg) = socket.recv() => {
                 let msg = if let Ok(msg) = msg {
                     let data = msg.clone().into_data();
-                    let data: WsInputData = serde_json::from_slice(&data).unwrap();
-                    println!("{:?}", data);
+                    let data: WsInputData = if let Ok(data) = serde_json::from_slice(&data) {
+                        data
+                    } else {
+                        continue;
+                    };
+
+                    if let WsInnerData::Temp { temp, hum, wh } = data.inner {
+                        _ = sqlx::query!(
+                            "INSERT INTO room_history (room_id, temperature, humidity, watthour, created_at)
+                            VALUES (?, ?, ?, ?, datetime('now'))",
+                            device_id,
+                            temp,
+                            hum,
+                            wh,
+                        )
+                            .execute(&pool).await;
+                    }
 
                     msg
                 } else {
