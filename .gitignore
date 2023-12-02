@@ -18,4 +18,4 @@ Cargo.lock
 
 /target
 
-*.db
+*.db*

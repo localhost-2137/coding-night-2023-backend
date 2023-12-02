@@ -51,7 +51,13 @@ pub async fn websocket_handler(
 }
 
 async fn handle_socket(mut socket: WebSocket, device_id: i64, pool: SqlitePool) {
-    println!("New client: {}", device_id);
+    let room = sqlx::query!("SELECT * FROM room WHERE room_id = ?", device_id)
+        .fetch_optional(&pool)
+        .await;
+    if room.is_err() || room.expect("Room is none").is_none() {
+        return;
+    }
+
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
     {
         _ = tx.send(WsOutputData::Settings {
@@ -80,6 +86,15 @@ async fn handle_socket(mut socket: WebSocket, device_id: i64, pool: SqlitePool) 
                             temp,
                             hum,
                             wh,
+                        )
+                            .execute(&pool).await;
+
+                        _ = sqlx::query!(
+                            "UPDATE room SET current_temperature = ?, current_humidity = ?, current_watthour = ? WHERE room_id = ?",
+                            temp,
+                            hum,
+                            wh,
+                            device_id,
                         )
                             .execute(&pool).await;
                     }
