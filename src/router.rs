@@ -18,6 +18,7 @@ pub fn router(conn: SqlitePool) -> Router {
             .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
             .allow_credentials(true)
             .allow_headers([COOKIE, CONTENT_TYPE])
+            .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE])
         )
         .layer(Extension(conn))
 }

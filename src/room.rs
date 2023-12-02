@@ -3,6 +3,7 @@ use axum::extract::Query;
 use axum::http::{HeaderValue, StatusCode};
 use axum::routing::{get, patch, post};
 use axum::{Extension, Json, Router};
+use http::Method;
 use http::header::{CONTENT_TYPE, COOKIE};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -48,6 +49,7 @@ pub fn router(pool: SqlitePool) -> Router {
             .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
             .allow_credentials(true)
             .allow_headers([COOKIE, CONTENT_TYPE])
+            .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE])
         )
         .layer(Extension(pool))
 }
