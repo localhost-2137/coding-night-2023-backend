@@ -3,8 +3,8 @@ use axum::extract::Query;
 use axum::http::{HeaderValue, StatusCode};
 use axum::routing::{get, patch, post};
 use axum::{Extension, Json, Router};
-use http::Method;
 use http::header::{CONTENT_TYPE, COOKIE};
+use http::Method;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{Executor, SqlitePool};
@@ -45,11 +45,12 @@ pub fn router(pool: SqlitePool) -> Router {
         .route("/", get(get_room_controller))
         .route("/", post(create_room_controller))
         .route("/", patch(update_room_controller))
-        .layer(CorsLayer::new()
-            .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
-            .allow_credentials(true)
-            .allow_headers([COOKIE, CONTENT_TYPE])
-            .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE])
+        .layer(
+            CorsLayer::new()
+                .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
+                .allow_credentials(true)
+                .allow_headers([COOKIE, CONTENT_TYPE])
+                .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE]),
         )
         .layer(Extension(pool))
 }
