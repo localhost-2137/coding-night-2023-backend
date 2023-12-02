@@ -56,7 +56,7 @@ async fn login_controller(
 
 async fn login_service(conn: &SqlitePool, login_dto: LoginDto) -> anyhow::Result<String> {
     let res = sqlx::query!(
-        "SELECT email, user_id, password FROM user WHERE email = ?",
+        "SELECT email, user_id, password, name, lastname FROM user WHERE email = ?",
         login_dto.email,
     )
         .fetch_one(conn).await?;
@@ -68,7 +68,7 @@ async fn login_service(conn: &SqlitePool, login_dto: LoginDto) -> anyhow::Result
         anyhow::Error::msg("Failed to verify password")
     })?;
 
-    let jwt_struct = JWTAuth { email: res.email, id: res.user_id as u32 };
+    let jwt_struct = JWTAuth { email: res.email, id: res.user_id as u32, firstname: res.name, lastname: res.lastname };
     let token_str = crate::utils::jwt::serialize_jwt(jwt_struct)?;
 
     Ok(token_str)
@@ -99,7 +99,7 @@ async fn register_service(conn: &SqlitePool, register_dto: RegisterDto) -> anyho
     let hashed_password = hash_password(&register_dto.password)?;
 
     let res = sqlx::query!(
-        "INSERT INTO user(email, password, name, lastname) VALUES (?, ?, ?, ?) RETURNING email, user_id",
+        "INSERT INTO user(email, password, name, lastname) VALUES (?, ?, ?, ?) RETURNING email, user_id, name, lastname",
         register_dto.email,
         hashed_password,
         register_dto.name,
@@ -109,6 +109,8 @@ async fn register_service(conn: &SqlitePool, register_dto: RegisterDto) -> anyho
     Ok(JWTAuth {
         email: res.email,
         id: res.user_id as u32,
+        firstname: register_dto.name,
+        lastname: register_dto.lastname,
     })
 }
 

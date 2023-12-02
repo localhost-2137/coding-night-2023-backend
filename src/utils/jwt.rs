@@ -8,6 +8,8 @@ use sha2::Sha256;
 #[derive(Serialize, Deserialize, Clone)]
 pub struct JWTAuth {
     pub email: String,
+    pub firstname: String,
+    pub lastname: String,
     pub id: u32,
 }
 
@@ -26,15 +28,16 @@ pub fn extract_jwt(cookie_jar: &CookieJar) -> anyhow::Result<JWTAuth> {
     let key: Hmac<Sha256> = Hmac::new_from_slice(secret.as_bytes())?;
     let token_str = token_from_headers(cookie_jar)?;
 
-    let token: Token<Header, JWTAuth, _> = VerifyWithKey::verify_with_key(token_str.as_str(), &key)?;
+    let token: Token<Header, JWTAuth, _> =
+        VerifyWithKey::verify_with_key(token_str.as_str(), &key)?;
 
     Ok(token.claims().to_owned())
 }
 
 pub fn token_from_headers(cookie_jar: &CookieJar) -> anyhow::Result<String> {
-    let cookie = cookie_jar.get("JWT_AUTH").ok_or(
-        anyhow::Error::msg("Failed to read AUTH_JWT header")
-    )?;
+    let cookie = cookie_jar
+        .get("JWT_AUTH")
+        .ok_or(anyhow::Error::msg("Failed to read AUTH_JWT header"))?;
     let token = cookie.value().to_string();
 
     Ok(token)
