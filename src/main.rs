@@ -7,6 +7,7 @@ mod middleware;
 mod room;
 mod router;
 mod utils;
+mod schedule;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

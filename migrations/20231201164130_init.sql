@@ -10,38 +10,40 @@ CREATE TABLE user
 
 CREATE TABLE room
 (
-    room_id   INTEGER PRIMARY KEY AUTOINCREMENT,
-    device_id INTEGER NOT NULL, 
-    icon_id   INT     NOT NULL,
-    owner_id  INT     NOT NULL,
+    room_id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    device_id           INTEGER NOT NULL,
+    icon_id             INT     NOT NULL,
+    owner_id            INT     NOT NULL,
 
-    room_name TEXT    NOT NULL,
-    current_temperature REAL NOT NULL,
-    current_humidity REAL NOT NULL,
-    current_watthour REAL NOT NULL,
+    room_name           TEXT    NOT NULL,
+    current_temperature REAL    NOT NULL,
+    current_humidity    REAL    NOT NULL,
+    current_watthour    REAL    NOT NULL,
 
     FOREIGN KEY (owner_id) REFERENCES user (user_id)
 );
 
 CREATE TABLE room_history
 (
-    room_id         INT NOT NULL,
-    temperature     REAL NOT NULL,
-    humidity        REAL NOT NULL,
-    watthour        REAL NOT NULL,
-    created_at      DATETIME NOT NULL,
+    room_id     INT      NOT NULL,
+    temperature REAL     NOT NULL,
+    humidity    REAL     NOT NULL,
+    watthour    REAL     NOT NULL,
+    created_at  DATETIME NOT NULL,
 
     FOREIGN KEY (room_id) REFERENCES room (room_id)
 );
 
 CREATE TABLE schedule
 (
-    schedule_id INTEGER PRIMARY KEY AUTOINCREMENT,
-    room_id     INT NOT NULL,
+    schedule_id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    room_id              INT NOT NULL,
 
-    repeat_on   TEXT CHECK (
+    repeat_on            TEXT CHECK (
             repeat_on IN ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')
         ),
-    DELETE_ON   DATETIME,
-    TRIGGER_ON  TIME
+    ON_FROM_TEMPERATURE  REAL,
+    OFF_FROM_TEMPERATURE REAL,
+    REPET_ONCE           BOOLEAN,
+    TRIGGER_AFTER        TIME
 );

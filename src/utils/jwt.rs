@@ -13,7 +13,7 @@ pub struct JWTAuth {
 
 pub fn serialize_jwt(val: JWTAuth) -> anyhow::Result<String> {
     let secret = std::env::var("SECRET")?;
-    let key: Hmac<Sha256> = Hmac::new_from_slice(secret.as_bytes()).unwrap();
+    let key: Hmac<Sha256> = Hmac::new_from_slice(secret.as_bytes())?;
     let header = get_jwt_header();
     let token_str = Token::new(header, val).sign_with_key(&key)?;
 
