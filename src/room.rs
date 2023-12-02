@@ -1,9 +1,10 @@
 use crate::utils::jwt::JWTAuth;
-use axum::extract::Query;
+use axum::extract::{Path, Query};
 use axum::http::{HeaderValue, StatusCode};
-use axum::routing::{get, patch, post};
+use axum::routing::{get, patch, post, delete};
 use axum::{Extension, Json, Router};
 use http::header::{CONTENT_TYPE, COOKIE};
+use http::Method;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{Executor, SqlitePool};
@@ -34,6 +35,9 @@ struct Room {
     id: u32,
     name: String,
     icon_id: u32,
+    temperature: f64,
+    humidity: f64,
+    watthour: f64,
 }
 
 pub fn router(pool: SqlitePool) -> Router {
@@ -41,10 +45,13 @@ pub fn router(pool: SqlitePool) -> Router {
         .route("/", get(get_room_controller))
         .route("/", post(create_room_controller))
         .route("/", patch(update_room_controller))
-        .layer(CorsLayer::new()
-            .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
-            .allow_credentials(true)
-            .allow_headers([COOKIE, CONTENT_TYPE])
+        .route("/:id", delete(delete_room_controller))
+        .layer(
+            CorsLayer::new()
+                .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
+                .allow_credentials(true)
+                .allow_headers([COOKIE, CONTENT_TYPE])
+                .allow_methods([Method::GET, Method::POST, Method::PATCH, Method::DELETE]),
         )
         .layer(Extension(pool))
 }
@@ -85,6 +92,34 @@ async fn update_room_service(
     Ok(())
 }
 
+async fn delete_room_controller(
+    Extension(pool): Extension<SqlitePool>,
+    jwt_auth: JWTAuth,
+    Path(id): Path<u32>,
+) -> Result<String, (StatusCode, String)> {
+    delete_room_service(pool, jwt_auth.id, id)
+        .await
+        .map_err(|e| {
+            let err = e.to_string();
+            (StatusCode::INTERNAL_SERVER_ERROR, err)
+        })?;
+
+    Ok("Successfully updated".to_string())
+}
+
+async fn delete_room_service(pool: SqlitePool, user_id: u32, room_id: u32) -> anyhow::Result<()> {
+    let query = sqlx::query!(
+        r#"
+        DELETE FROM room
+            WHERE owner_id = ? AND room_id = ?
+        "#,
+        user_id,
+        room_id
+    );
+    pool.execute(query).await?;
+    Ok(())
+}
+
 async fn create_room_controller(
     Extension(pool): Extension<SqlitePool>,
     jwt_auth: JWTAuth,
@@ -119,6 +154,9 @@ async fn create_room_service(
         id: res.room_id as u32,
         name: res.room_name,
         icon_id: res.icon_id as u32,
+        temperature: res.current_temperature,
+        humidity: res.current_humidity,
+        watthour: res.current_watthour,
     })
 }
 
@@ -159,6 +197,9 @@ async fn get_room_service(pool: SqlitePool, room_id: u32, user_id: u32) -> anyho
         id: res.room_id as u32,
         name: res.room_name,
         icon_id: res.icon_id as u32,
+        temperature: res.current_temperature,
+        humidity: res.current_humidity,
+        watthour: res.current_watthour,
     })
 }
 
@@ -174,6 +215,9 @@ async fn get_all_rooms_service(pool: SqlitePool, user_id: u32) -> anyhow::Result
             id: row.room_id as u32,
             name: row.room_name,
             icon_id: row.icon_id as u32,
+            temperature: row.current_temperature,
+            humidity: row.current_humidity,
+            watthour: row.current_watthour,
         });
     }
 
