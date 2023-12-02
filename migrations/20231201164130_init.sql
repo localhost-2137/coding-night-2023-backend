@@ -35,13 +35,16 @@ CREATE TABLE room_history
 CREATE TABLE schedule
 (
     schedule_id          INTEGER PRIMARY KEY AUTOINCREMENT,
-    room_id              INT NOT NULL,
+    owner_id             INT     NOT NULL,
+    room_id              INT     NOT NULL,
 
     repeat_on            TEXT CHECK (
             repeat_on IN ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')
         ),
     on_from_temperature  REAL,
     off_from_temperature REAL,
-    repeat_once          BOOLEAN,
-    trigger_after        TIME
+    repeat_once          BOOLEAN NOT NULL,
+    trigger_after_ms     INTEGER,
+
+    FOREIGN KEY(owner_id) REFERENCES user(user_id)
 );
