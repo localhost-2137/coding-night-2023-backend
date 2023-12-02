@@ -99,6 +99,12 @@ async fn handle_socket(mut socket: WebSocket, device_id: i64, pool: SqlitePool) 
                             device_id,
                         )
                             .execute(&pool).await;
+                    } else if let WsInnerData::Move = data.inner {
+                        _ = sqlx::query!(
+                            "UPDATE room SET last_presence = (strftime('%s', 'now')) WHERE room_id = ?",
+                            device_id,
+                        )
+                            .execute(&pool).await;
                     }
 
                     msg
