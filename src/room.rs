@@ -64,13 +64,11 @@ async fn update_room_service(pool: SqlitePool, user_id: u32, update_dto: UpdateR
         r#"
         UPDATE room
             SET room_name = COALESCE(?, room_name),
-            icon_id = COALESCE(?, icon_id),
-            device_id = COALESCE(?, device_id)
+            icon_id = COALESCE(?, icon_id)
             WHERE owner_id = ? AND room_id = ?
         "#,
         update_dto.name,
         update_dto.icon_id,
-        device_id,
         user_id,
         update_dto.id
     );

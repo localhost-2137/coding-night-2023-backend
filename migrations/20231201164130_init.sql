@@ -10,21 +10,13 @@ CREATE TABLE user
 
 CREATE TABLE room
 (
-<<<<<<< HEAD
-    room_id             INTEGER PRIMARY KEY AUTOINCREMENT,
-    device_id           INTEGER NOT NULL,
-    icon_id             INT     NOT NULL,
-    owner_id            INT     NOT NULL,
-=======
-    room_id   INTEGER PRIMARY KEY,
-    icon_id   INT     NOT NULL,
-    owner_id  INT     NOT NULL,
->>>>>>> 1aac592 (chore: remove device id)
-
-    room_name           TEXT    NOT NULL,
-    current_temperature REAL    NOT NULL,
-    current_humidity    REAL    NOT NULL,
-    current_watthour    REAL    NOT NULL,
+    room_id             INTEGER PRIMARY KEY,
+    icon_id             INT  NOT NULL,
+    owner_id            INT  NOT NULL,
+    room_name           TEXT NOT NULL,
+    current_temperature REAL NOT NULL,
+    current_humidity    REAL NOT NULL,
+    current_watthour    REAL NOT NULL,
 
     FOREIGN KEY (owner_id) REFERENCES user (user_id)
 );
@@ -48,8 +40,8 @@ CREATE TABLE schedule
     repeat_on            TEXT CHECK (
             repeat_on IN ('monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday')
         ),
-    ON_FROM_TEMPERATURE  REAL,
-    OFF_FROM_TEMPERATURE REAL,
-    REPET_ONCE           BOOLEAN,
-    TRIGGER_AFTER        TIME
+    on_from_temperature  REAL,
+    off_from_temperature REAL,
+    repeat_once          BOOLEAN,
+    trigger_after        TIME
 );
