@@ -6,7 +6,7 @@ use axum::{Extension, Json, Router};
 use axum::routing::post;
 use tower_cookies::{Cookie, CookieManagerLayer, Cookies};
 use serde::{Deserialize, Serialize};
-use sqlx::{Executor, SqlitePool};
+use sqlx::{Executor, query, SqlitePool};
 use tower_http::cors::CorsLayer;
 use crate::utils::jwt::JWTAuth;
 
@@ -60,7 +60,7 @@ async fn login_service(conn: &SqlitePool, login_dto: LoginDto) -> anyhow::Result
         login_dto.email,
     )
         .fetch_one(conn).await?;
-    
+
     let db_passwd_hash = PasswordHash::new(&res.password).map_err(|_| {
         anyhow::Error::msg("Failed to hash password")
     })?;
@@ -76,26 +76,40 @@ async fn login_service(conn: &SqlitePool, login_dto: LoginDto) -> anyhow::Result
 
 async fn register_controller(
     Extension(pool): Extension<SqlitePool>,
+    cookies: Cookies,
     Json(register_dto): Json<RegisterDto>) -> Result<String, StatusCode>
 {
-    register_service(&pool, register_dto).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let jwt_auth = register_service(&pool, register_dto).await.map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let jwt_string = crate::utils::jwt::serialize_jwt(jwt_auth).map_err(|_| {
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
+
+    let cookie = Cookie::build(("JWT_AUTH", jwt_string))
+        .secure(true)
+        .expires(None)
+        .path("/")
+        .build();
+
+    cookies.add(cookie);
 
     Ok("User created".to_string())
 }
 
-async fn register_service(conn: &SqlitePool, register_dto: RegisterDto) -> anyhow::Result<()> {
+async fn register_service(conn: &SqlitePool, register_dto: RegisterDto) -> anyhow::Result<JWTAuth> {
     let hashed_password = hash_password(&register_dto.password)?;
 
-    let query = sqlx::query!(
-        "INSERT INTO user(email, password, name, lastname) VALUES (?, ?, ?, ?)",
+    let res = sqlx::query!(
+        "INSERT INTO user(email, password, name, lastname) VALUES (?, ?, ?, ?) RETURNING email, user_id",
         register_dto.email,
         hashed_password,
         register_dto.name,
         register_dto.lastname,
-    );
+    ).fetch_one(conn).await?;
 
-    conn.execute(query).await?;
-    Ok(())
+    Ok(JWTAuth {
+        email: res.email,
+        id: res.user_id as u32,
+    })
 }
 
 fn hash_password(passwd: &str) -> anyhow::Result<String> {
