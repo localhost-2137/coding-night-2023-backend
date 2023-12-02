@@ -47,7 +47,6 @@ async fn login_controller(
         .expires(None)
         .path("/")
         .secure(false)
-        .same_site(cookie::SameSite::None)
         .build();
 
     cookies.add(cookie);
@@ -94,7 +93,6 @@ async fn register_controller(
         .expires(None)
         .path("/")
         .secure(false)
-        .same_site(cookie::SameSite::None)
         .build();
 
     cookies.add(cookie);
