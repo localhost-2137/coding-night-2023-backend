@@ -20,7 +20,7 @@ async fn main() -> anyhow::Result<()> {
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await?;
     let server = axum::serve(listener, router::router(pool));
 
-    println!("Server is listening on port 3000");
+    println!("Server is listening on port 3000!");
     server
         .await
         .expect("Failed to start server on 0.0.0.0:3000");
