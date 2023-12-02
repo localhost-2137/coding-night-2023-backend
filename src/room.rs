@@ -1,12 +1,12 @@
 use crate::utils::jwt::JWTAuth;
-use axum::{Router, Extension, Json};
 use axum::extract::Query;
-use axum::http::StatusCode;
+use axum::http::{HeaderValue, StatusCode};
 use axum::routing::{get, patch, post};
+use axum::{Extension, Json, Router};
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use sqlx::{Executor, SqlitePool};
-use tower_http::cors::CorsLayer;
+use tower_http::cors::{Any, CorsLayer};
 
 #[derive(Serialize, Deserialize, Clone)]
 struct CreateRoomDto {
@@ -40,8 +40,12 @@ pub fn router(pool: SqlitePool) -> Router {
         .route("/", get(get_room_controller))
         .route("/", post(create_room_controller))
         .route("/", patch(update_room_controller))
+        .layer(
+            CorsLayer::new()
+                .allow_origin("http://localhost:5173".parse::<HeaderValue>().unwrap())
+                .allow_headers(Any),
+        )
         .layer(Extension(pool))
-        .layer(CorsLayer::permissive())
 }
 
 async fn update_room_controller(
@@ -49,17 +53,21 @@ async fn update_room_controller(
     jwt_auth: JWTAuth,
     Json(update_room_dto): Json<UpdateRoomDto>,
 ) -> Result<String, (StatusCode, String)> {
-    update_room_service(pool, jwt_auth.id, update_room_dto).await.map_err(|e| {
-        let err = e.to_string();
-        (StatusCode::INTERNAL_SERVER_ERROR, err)
-    })?;
+    update_room_service(pool, jwt_auth.id, update_room_dto)
+        .await
+        .map_err(|e| {
+            let err = e.to_string();
+            (StatusCode::INTERNAL_SERVER_ERROR, err)
+        })?;
 
     Ok("Successfully updated".to_string())
 }
 
-async fn update_room_service(pool: SqlitePool, user_id: u32, update_dto: UpdateRoomDto) -> anyhow::Result<()> {
-    let device_id = update_dto.device_id.map(|e| e as i64);
-
+async fn update_room_service(
+    pool: SqlitePool,
+    user_id: u32,
+    update_dto: UpdateRoomDto,
+) -> anyhow::Result<()> {
     let query = sqlx::query!(
         r#"
         UPDATE room
@@ -81,10 +89,12 @@ async fn create_room_controller(
     jwt_auth: JWTAuth,
     Json(create_room_dto): Json<CreateRoomDto>,
 ) -> Result<Json<Room>, (StatusCode, String)> {
-    let res = create_room_service(pool, jwt_auth.id, create_room_dto).await.map_err(|e| {
-        let err = e.to_string();
-        (StatusCode::INTERNAL_SERVER_ERROR, err)
-    })?;
+    let res = create_room_service(pool, jwt_auth.id, create_room_dto)
+        .await
+        .map_err(|e| {
+            let err = e.to_string();
+            (StatusCode::INTERNAL_SERVER_ERROR, err)
+        })?;
 
     Ok(Json(res))
 }
@@ -100,7 +110,9 @@ async fn create_room_service(
         user_id,
         create_room.name,
         create_room.icon_id,
-    ).fetch_one(&pool).await?;
+    )
+    .fetch_one(&pool)
+    .await?;
 
     Ok(Room {
         id: res.room_id as u32,
@@ -166,4 +178,3 @@ async fn get_all_rooms_service(pool: SqlitePool, user_id: u32) -> anyhow::Result
 
     Ok(res)
 }
-
