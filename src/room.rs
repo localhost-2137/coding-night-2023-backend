@@ -250,7 +250,7 @@ async fn get_rooms_history_controller(
     Ok(Json(res))
 }
 
-async fn get_rooms_history_service(pool: SqlitePool, user_id: u32, room_id: u32) -> anyhow::Result<Vec<RoomHistory>> {
+async fn get_rooms_history_service(pool: SqlitePool, user_id: u32, room_id: i64) -> anyhow::Result<Vec<RoomHistory>> {
     let rows = sqlx::query!(r#"
         SELECT temperature, humidity, watthour, created_at
         FROM room_history
